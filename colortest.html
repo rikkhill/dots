@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <title>PaletteKnife Test Page</title>
+    <script type='text/javascript' src='./dots.js'>
+    </script>
+    <script type='text/javascript' src='./jquery.min.js'>
+    </script>
+    <script type='text/javascript'>
+    $(document).ready(function(){
+        console.log("bloo");
+        var col = new Color();
+        console.log(col);
+        $("<div>").addClass("square").css('background-color', col.toHex()).appendTo($("body"));
+    });
+    </script>
+    <style>
+        .square {
+            position: relative;
+            width: 150px;
+            height: 150px;
+        }
+    </style>
+    </head>
+    <body>
+    </body>
+</html>
