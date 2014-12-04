@@ -1,20 +1,22 @@
-<html>
+<html xmlns:svg="http://www.w3.org/2000/svg">
     <head>
         <title>Dots Test Page</title>
     <script type='text/javascript' src='./dots.js'>
     </script>
+    <script type='text/javascript' src='./js/jquery.min.js'>
+    </script>
+    <script type='text/javascript' src='./js/tinycolor.min.js'>
+    </script>
     <style>
         #board {
             position: absolute;
-            top: 10%;
-            left: 10%;
-            width: 60%;
-            height: 60%;
+            width: 1000px;
+            height: 1000px;
             border: 1pt solid black;
         }
     </style>
     </head>
     <body>
-        <svg id='board'></svg>
+        <svg id='board' xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"/>
     </body>
 </html>

@@ -5,10 +5,32 @@ console.log("dots!");
 
 // utility stuff
 
-// Random integer from a to be
+// Eventually going to break the colour stuff out into
+// a submodule called PaletteKnife
+
+// Uniform random integer from a to be
 function randint(a, b) {
     return Math.round( Math.random() * (b - a) + a );
 }
+
+// Mock-standard-normally distributed random number
+function stdnorm(n) {
+    var n = typeof n !== 'undefined' ? n : 20;
+
+    // take n random numbers from U(-0.5,0.5), scaled by _/12 to have SD 1
+    var arr = Array(n + 1).join(0).split("");
+    arr = arr.map(function(){ return (Math.random() - 0.5) * Math.sqrt(12)} );
+
+    // Return the mean. By CLF, this function's output is standard normal
+    return (arr.reduce(function(a, b) {return a + b}));
+}
+
+// Mock normally-distributed random number
+function randnorm(mu, theta) {
+    return ( stdnorm() * theta ) + mu;
+}
+
+// Replacing Color object with tinycolor.js
 
 // Colour Object
 function Color(components) {
@@ -26,7 +48,7 @@ function Color(components) {
 
     // Color-parsing private methods
     var parseHex = function(hexstring) {
-        var re = RegExp('#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', 'i');
+        var re = RegExp('^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', 'i');
         var colmatch = hexstring.match(re);
         if (colmatch !== null) {
             return ([   parseInt(colmatch[1],16),
@@ -73,12 +95,13 @@ function Color(components) {
     // Better ways of validating the colour input
 
     if (typeof components === typeof '') { // Parse string input
-        console.log("string");
         var parsed_hex = parseHex(components);
         if (parsed_hex) {
             this.r = parsed_hex[0];
             this.g = parsed_hex[1];
             this.b = parsed_hex[2];
+        } else {
+            invalid("unparseable string");
         }
     } else if (typeof components === []) { // Parse array input
         if (areNums(components) && isRgb(components)) {
@@ -86,7 +109,7 @@ function Color(components) {
             this.g = components[1];
             this.b = components[2];
         } else {
-            invalid("rgb array");
+            invalid("Unparseable array");
         }
     } else if (typeof components === typeof 1) { // Parse numeric input
         if (areNums(arguments) && isRgb(arguments)) {
@@ -94,17 +117,21 @@ function Color(components) {
             this.g = arguments[1];
             this.b = arguments[2];
         } else {
-            invalid("rgb values");
+            invalid("unparseable positional values");
         }
     } else if (typeof components === 'undefined') { // Parse undefined input
         this.randomise();
     } else {
-        invalid("generally");
+        invalid('Unparseable input');
     }
    
     this.available = true;
     // Aaaaand we're instantiated.
 
+    // Fake assertion on RGB values
+    if ( !this.r || !this.g || !this.b ) {
+
+    }
 
     this.toHex = function() {
         return "#" + dectohex(this.r) + dectohex(this.g) + dectohex(this.b);
@@ -113,6 +140,8 @@ function Color(components) {
     this.toRgb = function() {
         return [ this.r, this.g, this.b ];
     }
+
+    
 }
 
 
@@ -121,8 +150,24 @@ function Color(components) {
 // Representation methods
 // Mixing methods
 
-Color.prototype.mix = function() {
-    
+Color.prototype.mix = function(mixer, proportion) {
+    // proportion is the ratio of the mixer color to the original color
+    var prop = typeof proportion !== 'undefined' ? proportion : 1;
+    if (mixer.hasOwnProperty('r') &&
+        mixer.hasOwnProperty('g') &&
+        mixer.hasOwnProperty('b')) {
+        // Euclidean equidistant centroid, scaled proportionally
+        return new Color(
+            Math.round ( ( this.r + ( mixer.r * prop ) ) / 2 ),
+            Math.round ( ( this.g + ( mixer.g * prop ) ) / 2 ),
+            Math.round ( ( this.b + ( mixer.b * prop ) ) / 2 ) 
+        );
+    }
+}
+
+// Produce a pastel shade of this colour
+Color.prototype.pastel = function() {
+    return this.mix(new Color('#ffffff'));
 }
 
 
@@ -133,35 +178,46 @@ Color.prototype.mix = function() {
 
 function Dotbox(element, defaults) {
 
-    this.element = element;
-    this.width = this.element.offsetWidth;
-    this.height = this.element.offsetHeight;
-
-
-    this.defaults = typeof defaults !== 'undefined' ? defaults : {
-       "cx" : randint(),
+    if (typeof element === 'object') {
+        this.element = 'element';
+    } else if (typeof element === typeof "") {
+        this.element = document.getElementById(element);
+    } else {
+        throw "invalid element";
     }
 
-    this.makeDot = function(params) {
-        
+    this.width = Math.round(this.element.getBoundingClientRect().width);
+    this.height = Math.round(this.element.getBoundingClientRect().height);
+
+    var self = this;
+    // defaults specifies a n object of default attributes for dots
+    var defaults = typeof defaults !== 'undefined' ? defaults : {
+       "cx"     : function(){ return randnorm(self.width/2, self.width/2) },
+       "cy"     : function(){ return randnorm(self.height/2, self.height/2) },
+       "r"      : 3,
+       "stroke-width" : 0,
+       "fill"   : function(){ return tinycolor.random().toHexString() }
     }
 
-}
+    this.makeDot = function(params, func) {
+        var ns = this.element.getAttribute('xmlns');
+        var params = typeof params !== 'undefined' ? params : defaults;
+        var dot = document.createElementNS(ns, 'circle');
+        for (var key in params) {
+            var value;
+            if (typeof params[key] === 'function') {
+                value = params[key]();
+            } else {
+                value = params[key];
+            }
+            dot.setAttribute(key, value);
+        }
+        if (typeof func === 'function') { func(dot); }
+        this.element.appendChild(dot);
+    }
 
-
-// dot object
-
-function Dot(x, y, radius, color, parent) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.parent = parent;
-
-    this.element = document.createElement('circle');
-    this.element.setAttribute('cx', this.x);
-
-    this.place = function() {
+    this.getDot = function(id) {
+        return document.getElementById(id);
     }
 
 }
