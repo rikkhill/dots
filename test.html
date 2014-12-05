@@ -11,9 +11,25 @@
 
 $(document).ready(function() {
     db = new Dotbox(document.getElementById('board'));
-    for (var i in Array(1000).join(0).split("")) {
-        db.makeDot();
+    var basecolor = tinycolor.random();
+    var colorset = basecolor.analogous(8).map(function(i){
+        return i.toHexString();
+    });
+console.log(colorset);
+    var weights = [30, 25, 20, 10, 10, 5, 10, 20];
+    var distributions = {};
+    for (var i in colorset) {
+        distributions[ colorset[i] ] = { prop: weights[i], func: (function() {
+            var color = colorset[i];
+            return function(){ return color; }
+        })()}
+    }
 
+    color_dist = discreteDistribution(distributions);
+
+    for (var i in Array(300).join(0).split("")) {
+        var col = color_dist();
+        db.makeDot({fill: col });
     }
 });
 

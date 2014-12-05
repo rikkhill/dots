@@ -1,34 +1,21 @@
 // dots.js
 // A library for making svg coloured dots
 
-console.log("dots!");
 
 // Moments
+function mean(values){
+  return values.reduce(function(a, b){ return a + b; }, 0) / values.length;
+}
 
-function standardDeviation(values){
-  var avg = average(values);
-  
+function sd(values){
+  var avg = mean(values);
   var squareDiffs = values.map(function(value){
-    var diff = value - avg;
-    var sqrDiff = diff * diff;
-    return sqrDiff;
+    return Math.pow( value - avg, 2 );
   });
   
-  var avgSquareDiff = average(squareDiffs);
- 
-  var stdDev = Math.sqrt(avgSquareDiff);
-  return stdDev;
+  return Math.sqrt(mean(squareDiffs));
 }
  
-function average(data){
-  var sum = data.reduce(function(sum, value){
-    return sum + value;
-  }, 0);
- 
-  var avg = sum / data.length;
-  return avg;
-}
-
 // utility stuff
 
 // Eventually going to break the colour stuff out into
@@ -58,148 +45,27 @@ function randnorm(mu, theta) {
     return ( stdnorm() * theta ) + mu;
 }
 
-// Replacing Color object with tinycolor.js
+// Take a map of functions and proportions and return a function that
+// returns the result of those functions in those proportions
+function discreteDistribution(params) {
+    var total = 0;
+    var function_map = {};
 
-// Colour Object
-function Color(components) {
-
-    // Some hairy functions required to instantiate the object. Bear with me...
-
-    // Internally, we work with RGB
-    this.r = null;
-    this.g = null;
-    this.b = null;
-
-    this.available = false;
-
-    var self = this;
-
-    // Color-parsing private methods
-    var parseHex = function(hexstring) {
-        var re = RegExp('^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', 'i');
-        var colmatch = hexstring.match(re);
-        if (colmatch !== null) {
-            return ([   parseInt(colmatch[1],16),
-                        parseInt(colmatch[2],16),
-                        parseInt(colmatch[3],16) ]);
-        } else {
-            return false;
-        }
+    for (var i in params) {
+        total += params[i].prop;
+        function_map[total] = params[i].func;
     }
 
-    var isRgb = function(color_array) {
-        for (var i in color_array) {
-            if (color_array[i] < 0 || color_array[i] > 255) {
-                return false;
-            }
-            return true;
-        }
-    }
-
-    var areNums = function(nums) {
-        for (var i in nums) {
-            if (isNaN(parseFloat(nums[i]) || !isFinite(nums[i]))) {
-                return false;
+    return function() { 
+        var num = Math.random() * total;
+        for (var i in function_map) {
+            if (num < i) {
+                return function_map[i]();
+                break;
             }
         }
-        return true;
-    }
-
-    var dectohex = function(c) {
-        var hex = c.toString(16);
-        return hex.length == 1 ? "0" + hex : hex;                
-    }
-
-    var invalid = function(s) {
-        throw "invalid color argument " + s;
-    }
-
-    this.randomise = function() {
-        this.r = randint(0,255);
-        this.g = randint(0,255);
-        this.b = randint(0,255);
-    }
-
-    // Better ways of validating the colour input
-
-    if (typeof components === typeof '') { // Parse string input
-        var parsed_hex = parseHex(components);
-        if (parsed_hex) {
-            this.r = parsed_hex[0];
-            this.g = parsed_hex[1];
-            this.b = parsed_hex[2];
-        } else {
-            invalid("unparseable string");
-        }
-    } else if (typeof components === []) { // Parse array input
-        if (areNums(components) && isRgb(components)) {
-            this.r = components[0];
-            this.g = components[1];
-            this.b = components[2];
-        } else {
-            invalid("Unparseable array");
-        }
-    } else if (typeof components === typeof 1) { // Parse numeric input
-        if (areNums(arguments) && isRgb(arguments)) {
-            this.r = arguments[0];
-            this.g = arguments[1];
-            this.b = arguments[2];
-        } else {
-            invalid("unparseable positional values");
-        }
-    } else if (typeof components === 'undefined') { // Parse undefined input
-        this.randomise();
-    } else {
-        invalid('Unparseable input');
-    }
-   
-    this.available = true;
-    // Aaaaand we're instantiated.
-
-    // Fake assertion on RGB values
-    if ( !this.r || !this.g || !this.b ) {
-
-    }
-
-    this.toHex = function() {
-        return "#" + dectohex(this.r) + dectohex(this.g) + dectohex(this.b);
-    }
-
-    this.toRgb = function() {
-        return [ this.r, this.g, this.b ];
-    }
-
-    
-}
-
-
-
-
-// Representation methods
-// Mixing methods
-
-Color.prototype.mix = function(mixer, proportion) {
-    // proportion is the ratio of the mixer color to the original color
-    var prop = typeof proportion !== 'undefined' ? proportion : 1;
-    if (mixer.hasOwnProperty('r') &&
-        mixer.hasOwnProperty('g') &&
-        mixer.hasOwnProperty('b')) {
-        // Euclidean equidistant centroid, scaled proportionally
-        return new Color(
-            Math.round ( ( this.r + ( mixer.r * prop ) ) / 2 ),
-            Math.round ( ( this.g + ( mixer.g * prop ) ) / 2 ),
-            Math.round ( ( this.b + ( mixer.b * prop ) ) / 2 ) 
-        );
     }
 }
-
-// Produce a pastel shade of this colour
-Color.prototype.pastel = function() {
-    return this.mix(new Color('#ffffff'));
-}
-
-
-
 
 // Control object
 // Binds to an svg element
@@ -229,7 +95,7 @@ function Dotbox(element, defaults) {
 
     this.makeDot = function(params, func) {
         var ns = this.element.getAttribute('xmlns');
-        var params = typeof params !== 'undefined' ? params : defaults;
+        //var params = typeof params !== 'undefined' ? params : defaults;
         var dot = document.createElementNS(ns, 'circle');
         for (var key in params) {
             var value;
@@ -240,6 +106,19 @@ function Dotbox(element, defaults) {
             }
             dot.setAttribute(key, value);
         }
+        // Add default values if they're not there
+        for (var key in defaults) {
+            if(!params.hasOwnProperty(key)) {
+                var value;
+                if (typeof defaults[key] === 'function') {
+                    value = defaults[key]();
+                } else {
+                    value = defaults[key];
+                }
+                dot.setAttribute(key, value);
+            }
+        }
+
         if (typeof func === 'function') { func(dot); }
         this.element.appendChild(dot);
     }
@@ -247,5 +126,4 @@ function Dotbox(element, defaults) {
     this.getDot = function(id) {
         return document.getElementById(id);
     }
-
 }
