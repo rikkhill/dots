@@ -7,11 +7,23 @@
     </script>
     <script type='text/javascript' src='./js/tinycolor.min.js'>
     </script>
+    <script type='text/javascript'>
+
+$(document).ready(function() {
+    db = new Dotbox(document.getElementById('board'));
+    for (var i in Array(1000).join(0).split("")) {
+        db.makeDot();
+
+    }
+});
+
+
+    </script>
     <style>
         #board {
             position: absolute;
-            width: 1000px;
-            height: 1000px;
+            width: 300px;
+            height: 300px;
             border: 1pt solid black;
         }
     </style>

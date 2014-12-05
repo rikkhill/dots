@@ -3,6 +3,32 @@
 
 console.log("dots!");
 
+// Moments
+
+function standardDeviation(values){
+  var avg = average(values);
+  
+  var squareDiffs = values.map(function(value){
+    var diff = value - avg;
+    var sqrDiff = diff * diff;
+    return sqrDiff;
+  });
+  
+  var avgSquareDiff = average(squareDiffs);
+ 
+  var stdDev = Math.sqrt(avgSquareDiff);
+  return stdDev;
+}
+ 
+function average(data){
+  var sum = data.reduce(function(sum, value){
+    return sum + value;
+  }, 0);
+ 
+  var avg = sum / data.length;
+  return avg;
+}
+
 // utility stuff
 
 // Eventually going to break the colour stuff out into
@@ -17,9 +43,11 @@ function randint(a, b) {
 function stdnorm(n) {
     var n = typeof n !== 'undefined' ? n : 20;
 
-    // take n random numbers from U(-0.5,0.5), scaled by _/12 to have SD 1
+    // take n random numbers from U(-0.5,0.5), scaled by _/n/12 to have SD 1
     var arr = Array(n + 1).join(0).split("");
-    arr = arr.map(function(){ return (Math.random() - 0.5) * Math.sqrt(12)} );
+    arr = arr.map( function(){
+        return  ( ( Math.random() - 0.5) / Math.sqrt(n / 12)); 
+    });
 
     // Return the mean. By CLF, this function's output is standard normal
     return (arr.reduce(function(a, b) {return a + b}));
@@ -179,7 +207,7 @@ Color.prototype.pastel = function() {
 function Dotbox(element, defaults) {
 
     if (typeof element === 'object') {
-        this.element = 'element';
+        this.element = element;
     } else if (typeof element === typeof "") {
         this.element = document.getElementById(element);
     } else {
@@ -192,8 +220,8 @@ function Dotbox(element, defaults) {
     var self = this;
     // defaults specifies a n object of default attributes for dots
     var defaults = typeof defaults !== 'undefined' ? defaults : {
-       "cx"     : function(){ return randnorm(self.width/2, self.width/2) },
-       "cy"     : function(){ return randnorm(self.height/2, self.height/2) },
+       "cx"     : function(){ return randnorm(self.width/2, self.width/8) },
+       "cy"     : function(){ return randnorm(self.height/2, self.height/8) },
        "r"      : 3,
        "stroke-width" : 0,
        "fill"   : function(){ return tinycolor.random().toHexString() }
